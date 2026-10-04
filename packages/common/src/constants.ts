@@ -106,6 +106,7 @@ export const CLASSES = {
   SHAPE_ACTIONS_MENU: "App-menu__left",
   ZOOM_ACTIONS: "zoom-actions",
   SEARCH_MENU_INPUT_WRAPPER: "layer-ui__search-inputWrapper",
+  SEARCH_MENU_REPLACE_INPUT_WRAPPER: "layer-ui__search-replace-inputWrapper",
   CONVERT_ELEMENT_TYPE_POPUP: "ConvertElementTypePopup",
   SHAPE_ACTIONS_THEME_SCOPE: "shape-actions-theme-scope",
   FRAME_NAME: "frame-name",
