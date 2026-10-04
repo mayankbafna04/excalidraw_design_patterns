@@ -1,124 +1,66 @@
-<a href="https://excalidraw.com/" target="_blank" rel="noopener">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" alt="Excalidraw" srcset="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2_dark.png" />
-    <img alt="Excalidraw" src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2.png" />
-  </picture>
-</a>
+# Excalidraw — CMU 17-695
 
-<h4 align="center">
-  <a href="https://excalidraw.com">Excalidraw Editor</a> |
-  <a href="https://plus.excalidraw.com/blog">Blog</a> |
-  <a href="https://docs.excalidraw.com">Documentation</a> |
-  <a href="https://plus.excalidraw.com">Excalidraw+</a>
-</h4>
+Course copy of [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw) (MIT). See [`COURSE.md`](./COURSE.md).
 
-<div align="center">
-  <h2>
-    An open source virtual hand-drawn style whiteboard. </br>
-    Collaborative and end-to-end encrypted. </br>
-  <br />
-  </h2>
-</div>
+## Run
 
-<br />
-<p align="center">
-  <a href="https://github.com/excalidraw/excalidraw/blob/master/LICENSE">
-    <img alt="Excalidraw is released under the MIT license." src="https://img.shields.io/badge/license-MIT-blue.svg"  /></a>
-  <a href="https://www.npmjs.com/package/@excalidraw/excalidraw">
-    <img alt="npm downloads/month" src="https://img.shields.io/npm/dm/@excalidraw/excalidraw"  /></a>
-  <a href="https://docs.excalidraw.com/docs/introduction/contributing">
-    <img alt="PRs welcome!" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat"  /></a>
-  <a href="https://discord.gg/UexuTaE">
-    <img alt="Chat on Discord" src="https://img.shields.io/discord/723672430744174682?color=738ad6&label=Chat%20on%20Discord&logo=discord&logoColor=ffffff&widget=false"/></a>
-  <a href="https://deepwiki.com/excalidraw/excalidraw">
-    <img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
-  <a href="https://twitter.com/excalidraw">
-    <img alt="Follow Excalidraw on Twitter" src="https://img.shields.io/twitter/follow/excalidraw.svg?label=follow+@excalidraw&style=social&logo=twitter"/></a>
-</p>
-
-<div align="center">
-  <figure>
-    <a href="https://excalidraw.com" target="_blank" rel="noopener">
-      <img src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github%2Fproduct_showcase.png" alt="Product showcase" />
-    </a>
-    <figcaption>
-      <p align="center">
-        Create beautiful hand-drawn like diagrams, wireframes, or whatever you like.
-      </p>
-    </figcaption>
-  </figure>
-</div>
-
-## Features
-
-The Excalidraw editor (npm package) supports:
-
-- 💯&nbsp;Free & open-source.
-- 🎨&nbsp;Infinite, canvas-based whiteboard.
-- ✍️&nbsp;Hand-drawn like style.
-- 🌓&nbsp;Dark mode.
-- 🏗️&nbsp;Customizable.
-- 📷&nbsp;Image support.
-- 😀&nbsp;Shape libraries support.
-- 🌐&nbsp;Localization (i18n) support.
-- 🖼️&nbsp;Export to PNG, SVG & clipboard.
-- 💾&nbsp;Open format - export drawings as an `.excalidraw` json file.
-- ⚒️&nbsp;Wide range of tools - rectangle, circle, diamond, arrow, line, free-draw, eraser...
-- ➡️&nbsp;Arrow-binding & labeled arrows.
-- 🔙&nbsp;Undo / Redo.
-- 🔍&nbsp;Zoom and panning support.
-
-## Excalidraw.com
-
-The app hosted at [excalidraw.com](https://excalidraw.com) is a minimal showcase of what you can build with Excalidraw. Its [source code](https://github.com/excalidraw/excalidraw/tree/master/excalidraw-app) is part of this repository as well, and the app features:
-
-- 📡&nbsp;PWA support (works offline).
-- 🤼&nbsp;Real-time collaboration.
-- 🔒&nbsp;End-to-end encryption.
-- 💾&nbsp;Local-first support (autosaves to the browser).
-- 🔗&nbsp;Shareable links (export to a readonly link you can share with others).
-
-We'll be adding these features as drop-in plugins for the npm package in the future.
-
-## Quick start
-
-**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run the repository locally for development, please refer to our [Development Guide](https://docs.excalidraw.com/docs/introduction/development).
-
-Use `npm` or `yarn` to install the package.
+Node >= 18, Yarn 1.
 
 ```bash
-npm install react react-dom @excalidraw/excalidraw
-# or
-yarn add react react-dom @excalidraw/excalidraw
+yarn install
+yarn start                 # http://localhost:3000
+yarn test:typecheck        # tsc
+yarn test:code             # eslint
+yarn test:app --watch=false
 ```
 
-Check out our [documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/installation) for more details!
+---
 
-## Contributing
+## Samarth Shukla
 
-- Missing something or found a bug? [Report here](https://github.com/excalidraw/excalidraw/issues).
-- Want to contribute? Check out our [contribution guide](https://docs.excalidraw.com/docs/introduction/contributing) or let us know on [Discord](https://discord.gg/UexuTaE).
-- Want to help with translations? See the [translation guide](https://docs.excalidraw.com/docs/introduction/contributing#translating).
+**Andrew ID:** sshukla3@andrew.cmu.edu · **GitHub:** [@samarthshukla6](https://github.com/samarthshukla6)
 
-## Integrations
+### Request 05 — Arrange objects with a specified gap
 
-- [VScode extension](https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor)
-- [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw)
+Type a gap (e.g. 24) and space selected objects by that amount, even when sizes differ. The old _Distribute_ only equalises leftover space inside the current extent.
 
-## Who's integrating Excalidraw
+### The change
 
-[Google Cloud](https://googlecloudcheatsheet.withgoogle.com/architecture) • [Meta](https://meta.com/) • [CodeSandbox](https://codesandbox.io/) • [Obsidian Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) • [Replit](https://replit.com/) • [Slite](https://slite.com/) • [Notion](https://notion.so/) • [HackerRank](https://www.hackerrank.com/) • and many others
+`distributeElements` did four jobs, with the move loop written twice. Split:
 
-## Sponsors & support
+- `orderSelectionUnits` — group + sort (sort unchanged: by box centre)
+- `spaceBetween` / `fixedGap` — boxes in, offsets out (no scene, no render)
+- `applyTranslations` — the one move loop (`updateBoundElements` stays here)
+- `distributeElements` — looks the rule up and wires the three
 
-If you like the project, you can become a sponsor at [Open Collective](https://opencollective.com/excalidraw) or use [Excalidraw+](https://plus.excalidraw.com/).
+`Distribution` is `{ space: "between" }` or `{ space: "fixedGap", gap }`. Rules live in a `spacingRules` table keyed by `space`; a new union member is a type error until the table has an entry. Coordinator and actions are not edited for a third rule.
 
-## Thank you for supporting Excalidraw
+UI: `distributeHorizontallyWithGap` / `distributeVerticallyWithGap` (no shortcut), number input in Align, `currentItemDistributeGap` default 24. `fixedGap` never moves the first object in order. `perform` itself refuses frames, < 3 units, or a negative / non-numeric gap (returns elements unchanged). Existing distribute actions untouched.
 
-[<img src="https://opencollective.com/excalidraw/tiers/sponsors/0/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/0/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/1/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/1/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/2/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/2/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/3/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/3/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/4/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/4/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/5/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/5/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/6/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/6/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/7/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/7/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/8/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/8/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/9/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/9/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/10/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/10/website)
+### Results of the checks
 
-<a href="https://opencollective.com/excalidraw#category-CONTRIBUTE" target="_blank"><img src="https://opencollective.com/excalidraw/tiers/backers.svg?avatarHeight=32"/></a>
+| Check | Result |
+| --- | --- |
+| `yarn test:typecheck` / `yarn test:code` | 0 errors / clean |
+| `distribute.test.tsx` (unedited) | 4/4 |
+| `spacing.test.ts` (pure) | 12/12 |
+| `distributeWithGap.test.tsx` | 20/20 |
+| `align.test.tsx` | 50/50 |
+| Snapshots | only `currentItemDistributeGap: 24` (133 lines) |
 
-Last but not least, we're thankful to these companies for offering their services for free:
+New tests: unequal sizes, group-as-one-unit, y-axis, gap 0, overlap, rotation, bound label, bound arrow, undo, each refusal, and the two rules side-by-side (agree only when the first object is also the leftmost). Adding a dummy `Distribution` member produced one `tsc` error, on the table.
 
-[![Vercel](./.github/assets/vercel.svg)](https://vercel.com) [![Sentry](./.github/assets/sentry.svg)](https://sentry.io) [![Crowdin](./.github/assets/crowdin.svg)](https://crowdin.com)
+Manual, three rects at 100/w200, 420/w90, 560/w160: old button → 100 / 385 / 560 (gaps 85/85, extent kept). New button, gap 60 → 100 / 360 / 510 (first unmoved).
+
+### What changed from the RFC
+
+- Rules return **offsets**, not positions — `spaceBetween` is bit-identical to today.
+- A third rule is one function + one union member + **one table entry** (not “no edit anywhere”).
+- Old and new commands match **only** when the first-in-order object is also the leftmost; otherwise same gaps, whole run shifted. Tested both ways.
+- Extra files: `packages/common/src/constants.ts` (`DEFAULT_DISTRIBUTE_GAP`), `Actions.scss` (gap row).
+
+### What remains
+
+Frames still excluded (upstream TODO). No shortcut; one axis per click. Gap is to the rotation-aware box, not the drawn edge. Labels in `en.json` only.
+
+---
