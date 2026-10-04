@@ -168,15 +168,24 @@ export const fixedGap = (
 };
 
 /**
- * Picks the offsets for the requested spacing rule.
+ * The spacing rules, keyed by the `space` they implement. A new rule is a new
+ * member on `Distribution` and a new entry here; the mapped type means
+ * TypeScript asks for the entry rather than letting it be forgotten.
  */
-const spacingOffsets = (
+const spacingRules: {
+  [TSpace in Distribution["space"]]: (
+    boxes: readonly BoundingBox[],
+    distribution: Extract<Distribution, { space: TSpace }>,
+  ) => number[];
+} = {
+  between: (boxes, { axis }) => spaceBetween(boxes, axis),
+  fixedGap: (boxes, { axis, gap }) => fixedGap(boxes, axis, gap),
+};
+
+type SpacingRule = (
   boxes: readonly BoundingBox[],
   distribution: Distribution,
-): number[] =>
-  distribution.space === "fixedGap"
-    ? fixedGap(boxes, distribution.axis, distribution.gap)
-    : spaceBetween(boxes, distribution.axis);
+) => number[];
 
 /**
  * Moves each unit by its offset along the axis. The offsets are indexed the
@@ -222,7 +231,11 @@ export const distributeElements = (
     distribution.axis,
   );
 
-  const offsets = spacingOffsets(
+  // the lookup loses the link between the key and the rule's own variant, so
+  // the rule has to be widened back to the union it was narrowed from
+  const rule = spacingRules[distribution.space] as SpacingRule;
+
+  const offsets = rule(
     units.map(([, box]) => box),
     distribution,
   );

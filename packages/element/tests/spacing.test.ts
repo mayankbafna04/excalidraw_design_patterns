@@ -93,3 +93,21 @@ describe("fixedGap", () => {
     expect(fixedGap(boxes, "x", 24)).toEqual(spaceBetween(boxes, "x"));
   });
 });
+
+describe("the two rules side by side", () => {
+  it("land on the same positions when the first box owns the left edge", () => {
+    const boxes = [boxAt(0, 100), boxAt(120, 50), boxAt(198, 80)];
+
+    expect(positions(boxes, spaceBetween(boxes, "x"))).toEqual([0, 124, 198]);
+    expect(positions(boxes, fixedGap(boxes, "x", 24))).toEqual([0, 124, 198]);
+  });
+
+  it("land on different positions when it does not", () => {
+    // first in order is the narrow box at 10, but the box at 0 owns the left
+    // edge, so spaceBetween starts the run 10 units further left
+    const boxes = [boxAt(10, 40), boxAt(0, 200), boxAt(400, 60)];
+
+    expect(positions(boxes, spaceBetween(boxes, "x"))).toEqual([0, 120, 400]);
+    expect(positions(boxes, fixedGap(boxes, "x", 80))).toEqual([10, 130, 410]);
+  });
+});
