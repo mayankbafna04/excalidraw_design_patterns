@@ -168,3 +168,64 @@ Checked in that pass:
 Nothing for this feature. Single replace, replace-all, the locked skip, layout, and one-step undo are implemented and verified.
 
 ---
+
+# Qingyuan Yao
+
+- Andrew ID: `@qingyuay@andrew.cmu.edu`
+- GitHub: `@JasonYao-QY`
+
+# Request 08 – Export several frames in one operation
+
+The old export image only exports one file. We could select a single frame, and export as a single frame; we could also select multiple frames and export as a giant frame containing all of them. The new features allows us to select multiple frame, choose between exporting a giant frame or several small frames, and independently check each export as success or failure.
+
+## The change
+
+The export of images used to be handled by the pipeline `ImageExportDialog` → `App.onExportImage` → `exportCanvas` (in `data/index.ts`) → `exportToCanvas` (in `scene/export.ts`) → `fileSave`. The bulk of the pipeline is not changed. We refactor `ImageExportDialog` to allow calling `App.onBundledExport`, which export in bundle, and we introduce a new module `bundledExport` to manage exporting several frame in one operation.
+
+## BundledExport includes:
+
+1. `parseBundle` parses the bundle sent in by `App.onBundledExport`, and each mission calls `exportToPngBlob`.
+
+2. `trackProgress` tracks each mission’s failure and redirects the failure back to `App`, which shows them in `BundledExportStatus` inside `LayerUI`.
+
+3. `exportBundle` calls `createZip` (in `data/zip.ts`) → `fileSave`.
+
+Right now the original export operation as a giant frame also calls `exportToPngBlob` when exporting. Apart from that, every detail from the old export feature is kept.
+
+UI: One new toggle `exportFramesSeparately` and one new display region `BundledExportStatus`.
+
+There are 59 new tests written that cover clipping, image assets, cancellation, and a render failure, as according to the request. Now, there are a total of 76 tests included, as mentioned below in section Results of the checks.
+
+## Results of the checks
+
+These are proposal 08's step checks. 43 of them are in `tests/data/bundledExport.test.ts`, 15 of them are in `tests/bundledExport.test.tsx`, and 1 of them is in `tests/scene/export.test.ts`, added alongside the 18 existing functions for old features.
+
+| Checks on the proposal | Tests | Count |
+| --- | --- | --- |
+| Toggle directs the workflow | `.tsx` › "toggle between a single image and an image per 10 frame" (8); `scene/export.test.ts` › the existing "should export multiple frames when selected…" and the new "should export each of the selected frames on its own when exported as a bundle" (2) | 10 |
+| `parseBundle` parses frames into missions | `.ts` › `parseBundle` (7) | 7 |
+| `trackProgress` uses deterministic frame-id order | `.ts` › `trackProgress` › "completes the missions in the order of their ids", "doesn't reorder the supplied missions" (2) | 2 |
+| Missions launch correctly; results identical to individual export; cancellation | `.ts` › "runs one mission at a time…" (1); `.ts` › `bundledExport` › "matches exporting each frame on its own" (7); `.tsx` › "images in the archive are the same as when exporting each frame on its own" (1); cancel tests in `trackProgress` (2); `bundledExport` › "cancelling" (3); `.tsx` › "can be cancelled while exporting" (1) | 15 |
+| Every error type caught and displayed, in chronological order | `.ts` › `trackProgress` › "catches explicit and implicit failures…", "reports each failure as soon as it's detected" (2); `.ts` › `parseBundle` › "reports images that couldn't be rendered as a problem" (1); `.ts` › `bundledExport` › "failures" (4); `.tsx` › "progress and failures" (4) | 11 |
+| ZIP is packed once every result is in | `.ts` › `exportBundle` (3), `createZip` (5), `getBundleFilenames` (5), "reports that saving failed", "doesn't request a file when there's nothing to export" (2) | 15 |
+| Existing tests | `scene/export.test.ts` (18) | 18 |
+
+Manual checks also completed where separate frame export, one giant frame export, mid-task cancellation, scaling error and rendering error are all displayed.
+
+## What changed from the RFC
+
+- **Default outputs of failing frames.** The RFC’s comment is worth taking: originally the failure is designed to output as it is, but this creates an inconsistency between image-generating failures and failures without an output. Right now both failures generate a white canvas that outputs nothing, and “failure” is indicated by the filename inside the zip bundle.
+
+- **`filesystem.ts` is not edited.** Its extension type is derived from `MIME_TYPES`, so adding zip in `constants.ts` was enough.
+
+- **`LayerUI.tsx` gets a new panel instead of a changed error column.** `appState.errorMessage` and `ErrorDialog` are untouched. A new `BundledExportStatus` component, fed by a jotai atom, lists the failures; `LayerUI` only renders it.
+
+- **Additional design choices that AI automatically implements without specification:** A 10-frame limit (`BUNDLED_EXPORT_MAX_FRAMES`); filename sanitising, with duplicates and case-only collisions suffixed; PNG only: the SVG and clipboard buttons are hidden while the toggle is on.
+
+## What remains
+
+- **The old feature.** A frame is still able to be exported on its own, and one giant frame export still remains. The system still defaults to exporting one frame when multiple frames are selected, and only changes when the toggle is manually turned on.
+
+- **The old tests.** The 18 old tests for `export.ts` are kept, in order to track that the original features have stayed normal.
+
+- **Old design patterns.** The pattern of parsing missions, tracking processes individually, and merging at the end proved to be effective. Moreover, it turns out that there are less refactoring needed than anticipated, so most changes are adding a framework that supports multiple processes in one operation.
