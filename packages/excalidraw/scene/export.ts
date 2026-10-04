@@ -44,6 +44,7 @@ import type { Bounds } from "@excalidraw/common";
 import type {
   ExcalidrawFrameLikeElement,
   ExcalidrawTextElement,
+  FileId,
   NonDeleted,
   NonDeletedExcalidrawElement,
   NonDeletedSceneElementsMap,
@@ -186,11 +187,19 @@ export const exportToCanvas = async (
     exportPadding = DEFAULT_EXPORT_PADDING,
     viewBackgroundColor,
     exportingFrame,
+    onImageErrors,
   }: {
     exportBackground: boolean;
     exportPadding?: number;
     viewBackgroundColor: string;
     exportingFrame?: NonDeleted<ExcalidrawFrameLikeElement> | null;
+    /**
+     * Called with the ids of the image files that couldn't be rendered
+     * (missing or failed to load). The canvas is still returned, with those
+     * images drawn as placeholders, so without this callback the failure is
+     * silent.
+     */
+    onImageErrors?: (fileIds: readonly FileId[]) => void;
   },
   createCanvas: (
     width: number,
@@ -238,13 +247,24 @@ export const exportToCanvas = async (
 
   const defaultAppState = getDefaultAppState();
 
-  const { imageCache } = await updateImageCache({
+  const imageFileIds = getInitializedImageElements(elementsForRender).map(
+    (element) => element.fileId,
+  );
+
+  const { imageCache, erroredFiles } = await updateImageCache({
     imageCache: new Map(),
-    fileIds: getInitializedImageElements(elementsForRender).map(
-      (element) => element.fileId,
-    ),
+    fileIds: imageFileIds,
     files,
   });
+
+  if (onImageErrors) {
+    const failedFileIds = Array.from(new Set(imageFileIds)).filter(
+      (fileId) => erroredFiles.has(fileId) || !files[fileId],
+    );
+    if (failedFileIds.length) {
+      onImageErrors(failedFileIds);
+    }
+  }
 
   renderStaticScene({
     canvas,

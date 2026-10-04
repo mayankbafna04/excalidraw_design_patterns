@@ -18,7 +18,9 @@ import type {
 
 import type { LocalPoint } from "@excalidraw/math";
 
+import { getDefaultAppState } from "../../appState";
 import { prepareElementsForExport } from "../../data";
+import { parseBundle } from "../../data/bundledExport";
 import * as exportUtils from "../../scene/export";
 import {
   diamondFixture,
@@ -523,6 +525,8 @@ describe("exporting frames", () => {
       expect(svg.getAttribute("height")).toBe(frame.height.toString());
     });
 
+    // Selecting multiple frames exports them combined into a single image,
+    // unless they're exported as a bundle (see the test that follows).
     it("should export multiple frames when selected, excluding overlapping elements", async () => {
       const frame1 = API.createElement({
         type: "frame",
@@ -597,6 +601,123 @@ describe("exporting frames", () => {
       expect(svg.getAttribute("height")).toBe(
         (frame2.y + frame2.height + getFrameNameHeight("svg")).toString(),
       );
+    });
+
+    it("should export each of the selected frames on its own when exported as a bundle", async () => {
+      const frame1 = API.createElement({
+        type: "frame",
+        width: 100,
+        height: 100,
+        x: 0,
+        y: 0,
+      });
+      const frame2 = API.createElement({
+        type: "frame",
+        width: 100,
+        height: 100,
+        x: 200,
+        y: 0,
+      });
+
+      const frame1Child = API.createElement({
+        type: "rectangle",
+        width: 100,
+        height: 100,
+        x: 0,
+        y: 50,
+        frameId: frame1.id,
+      });
+      const frame2Child = API.createElement({
+        type: "rectangle",
+        width: 100,
+        height: 100,
+        x: 200,
+        y: 0,
+        frameId: frame2.id,
+      });
+      const frame2Overlapping = API.createElement({
+        type: "rectangle",
+        width: 100,
+        height: 100,
+        x: 250,
+        y: 0,
+      });
+
+      // capture what each frame's mission hands over to the export pipeline
+      const exported: Parameters<typeof exportToSvg>[0][] = [];
+      const appState = {
+        ...getDefaultAppState(),
+        width: 1000,
+        height: 1000,
+        offsetTop: 0,
+        offsetLeft: 0,
+        selectedElementIds: { [frame1.id]: true, [frame2.id]: true },
+      } as const;
+
+      const missions = parseBundle(
+        [frame1, frame2],
+        {
+          elements: [
+            frame1Child,
+            frame1,
+            frame2Child,
+            frame2,
+            frame2Overlapping,
+          ],
+          appState,
+          files: {},
+          exportBackground: true,
+          viewBackgroundColor: "#ffffff",
+        },
+        async (elements, _appState, _files, { exportingFrame }) => {
+          exported.push({ elements, files: null, exportingFrame });
+          return new Blob();
+        },
+      );
+
+      expect(missions.map((mission) => mission.id)).toEqual([
+        frame1.id,
+        frame2.id,
+      ]);
+
+      for (const mission of missions) {
+        await mission.run();
+      }
+
+      const [svg1, svg2] = await Promise.all(
+        exported.map((opts) => exportToSvg({ ...opts, exportPadding: 0 })),
+      );
+
+      // each frame gets its own image, which only has what's in that frame
+      expect(
+        svg1.querySelector(`[data-id="${frame1Child.id}"]`),
+      ).not.toBeNull();
+      expect(svg1.querySelector(`[data-id="${frame2Child.id}"]`)).toBeNull();
+      expect(
+        svg1.querySelector(`[data-id="${frame2Overlapping.id}"]`),
+      ).toBeNull();
+
+      expect(
+        svg2.querySelector(`[data-id="${frame2Child.id}"]`),
+      ).not.toBeNull();
+      expect(svg2.querySelector(`[data-id="${frame1Child.id}"]`)).toBeNull();
+      // unlike when combined into a single image, overlapping elements are
+      // exported, the same as when exporting a single frame
+      expect(
+        svg2.querySelector(`[data-id="${frame2Overlapping.id}"]`),
+      ).not.toBeNull();
+
+      // frames themselves (outline, name) aren't exported, and images are
+      // cropped to their frames
+      for (const [svg, frame] of [
+        [svg1, frame1],
+        [svg2, frame2],
+      ] as const) {
+        expect(svg.querySelector(`[data-id="${frame1.id}"]`)).toBeNull();
+        expect(svg.querySelector(`[data-id="${frame2.id}"]`)).toBeNull();
+        expect(svg.getAttribute("width")).toBe(frame.width.toString());
+        expect(svg.getAttribute("height")).toBe(frame.height.toString());
+      }
     });
 
     it("should render frame alone when not selected", async () => {

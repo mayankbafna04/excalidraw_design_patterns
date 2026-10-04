@@ -1171,6 +1171,7 @@ export type AppClassProperties = {
   id: App["id"];
   onInsertElements: App["onInsertElements"];
   onExportImage: App["onExportImage"];
+  onBundledExport: App["onBundledExport"];
   viewport: App["viewport"];
   addFiles: App["addFiles"];
   addElementsFromPasteOrLibrary: App["addElementsFromPasteOrLibrary"];

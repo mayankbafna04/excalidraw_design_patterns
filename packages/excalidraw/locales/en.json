@@ -533,20 +533,38 @@
       "darkMode": "Dark mode",
       "embedScene": "Embed scene",
       "scale": "Scale",
-      "padding": "Padding"
+      "padding": "Padding",
+      "separateFrames": "Each frame separately"
     },
     "tooltip": {
-      "embedScene": "Scene data will be saved into the exported PNG/SVG file so that the scene can be restored from it.\nWill increase exported file size."
+      "embedScene": "Scene data will be saved into the exported PNG/SVG file so that the scene can be restored from it.\nWill increase exported file size.",
+      "separateFrames": "Each selected frame will be exported into its own PNG image, and the images saved together in a ZIP file.\nWhen off, the frames are combined into a single image."
     },
     "title": {
       "exportToPng": "Export to PNG",
       "exportToSvg": "Export to SVG",
-      "copyPngToClipboard": "Copy PNG to clipboard"
+      "copyPngToClipboard": "Copy PNG to clipboard",
+      "exportToZip": "Export frames to ZIP"
     },
     "button": {
       "exportToPng": "PNG",
       "exportToSvg": "SVG",
-      "copyPngToClipboard": "Copy to clipboard"
+      "copyPngToClipboard": "Copy to clipboard",
+      "exportToZip": "ZIP"
+    }
+  },
+  "bundledExport": {
+    "title": {
+      "running": "Exporting frames",
+      "failed": "Some frames failed to export"
+    },
+    "progress": "{{completed}} of {{total}} frames processed",
+    "failed": "Failed frames: {{count}}",
+    "failedHint": "The failed frames are in the ZIP file too, as files ending with \"_failure.png\". They are either blank or rendered incorrectly.",
+    "errors": {
+      "noFrames": "There are no frames to export.",
+      "tooManyFrames": "Cannot export more than {{max}} frames at once.",
+      "imagesNotRendered": "Images that couldn't be rendered: {{count}}"
     }
   },
   "encrypted": {

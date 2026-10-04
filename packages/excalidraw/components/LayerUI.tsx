@@ -51,6 +51,7 @@ import { DefaultSidebar } from "./DefaultSidebar";
 import { TTDDialog } from "./TTDDialog/TTDDialog";
 import { Stats } from "./Stats";
 import ElementLinkDialog from "./ElementLinkDialog";
+import { BundledExportStatus } from "./BundledExportStatus";
 import { ErrorDialog } from "./ErrorDialog";
 import { EyeDropper, activeEyeDropperAtom } from "./EyeDropper";
 import { FixedSideContainer } from "./FixedSideContainer";
@@ -97,6 +98,7 @@ interface LayerUIProps {
   renderCustomStats?: ExcalidrawProps["renderCustomStats"];
   UIOptions: AppProps["UIOptions"];
   onExportImage: AppClassProperties["onExportImage"];
+  onBundledExport: AppClassProperties["onBundledExport"];
   renderWelcomeScreen: boolean;
   children?: React.ReactNode;
   app: AppClassProperties;
@@ -159,6 +161,7 @@ const LayerUI = ({
   renderCustomStats,
   UIOptions,
   onExportImage,
+  onBundledExport,
   renderWelcomeScreen,
   children,
   app,
@@ -230,6 +233,7 @@ const LayerUI = ({
         files={files}
         actionManager={actionManager}
         onExportImage={onExportImage}
+        onBundledExport={onBundledExport}
         onCloseRequest={() => setAppState({ openDialog: null })}
         name={app.getName()}
       />
@@ -511,6 +515,7 @@ const LayerUI = ({
           {appState.errorMessage}
         </ErrorDialog>
       )}
+      {defaultUIEnabled && <BundledExportStatus />}
       {defaultUIEnabled &&
         eyeDropperState &&
         editorInterface.formFactor !== "phone" && (
