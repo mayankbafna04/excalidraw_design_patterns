@@ -1,5 +1,5 @@
 import { exportToCanvas } from "@excalidraw/utils/export";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   DEFAULT_EXPORT_PADDING,
@@ -8,6 +8,8 @@ import {
   EXPORT_SCALES,
   cloneJSON,
 } from "@excalidraw/common";
+
+import { isFrameLikeElement } from "@excalidraw/element";
 
 import type { NonDeletedExcalidrawElement } from "@excalidraw/element/types";
 
@@ -25,7 +27,7 @@ import { nativeFileSystemSupported } from "../data/filesystem";
 import { useCopyStatus } from "../hooks/useCopiedIndicator";
 
 import { t } from "../i18n";
-import { isSomeElementSelected } from "../scene";
+import { getSelectedElements, isSomeElementSelected } from "../scene";
 
 import { copyIcon, downloadIcon, helpIcon } from "./icons";
 import { Dialog } from "./Dialog";
@@ -58,6 +60,7 @@ type ImageExportModalProps = {
   files: BinaryFiles;
   actionManager: ActionManager;
   onExportImage: AppClassProperties["onExportImage"];
+  onBundledExport: AppClassProperties["onBundledExport"];
   name: string;
   exportWithDarkMode: boolean;
 };
@@ -68,6 +71,7 @@ const ImageExportModal = ({
   files,
   actionManager,
   onExportImage,
+  onBundledExport,
   name,
   exportWithDarkMode,
 }: ImageExportModalProps) => {
@@ -76,8 +80,22 @@ const ImageExportModal = ({
     appStateSnapshot,
   );
 
+  const selectedFrames = useMemo(
+    () =>
+      getSelectedElements(elementsSnapshot, appStateSnapshot).filter(
+        (element) => isFrameLikeElement(element),
+      ),
+    [elementsSnapshot, appStateSnapshot],
+  );
+
   const [projectName, setProjectName] = useState(name);
   const [exportSelectionOnly, setExportSelectionOnly] = useState(hasSelection);
+  // when several frames are selected, they're either combined into a single
+  // image (default), or each exported into its own image (bundled export)
+  const [exportFramesSeparately, setExportFramesSeparately] = useState(false);
+  const canExportFramesSeparately =
+    exportSelectionOnly && selectedFrames.length > 1;
+  const isBundledExport = canExportFramesSeparately && exportFramesSeparately;
   const [exportWithBackground, setExportWithBackground] = useState(
     appStateSnapshot.exportBackground,
   );
@@ -231,6 +249,21 @@ const ImageExportModal = ({
             />
           </ExportSetting>
         )}
+        {canExportFramesSeparately && (
+          <ExportSetting
+            label={t("imageExportDialog.label.separateFrames")}
+            tooltip={t("imageExportDialog.tooltip.separateFrames")}
+            name="exportSeparateFrames"
+          >
+            <Switch
+              name="exportSeparateFrames"
+              checked={exportFramesSeparately}
+              onChange={(checked) => {
+                setExportFramesSeparately(checked);
+              }}
+            />
+          </ExportSetting>
+        )}
         <ExportSetting
           label={t("imageExportDialog.label.withBackground")}
           name="exportBackgroundSwitch"
@@ -300,52 +333,65 @@ const ImageExportModal = ({
           />
         </ExportSetting>
 
-        <div className="ImageExportModal__settings__buttons">
-          <FilledButton
-            className="ImageExportModal__settings__buttons__button"
-            label={t("imageExportDialog.title.exportToPng")}
-            onClick={() =>
-              onExportImage(EXPORT_IMAGE_TYPES.png, exportedElements, {
-                exportingFrame,
-              })
-            }
-            icon={downloadIcon}
-          >
-            {t("imageExportDialog.button.exportToPng")}
-          </FilledButton>
-          <FilledButton
-            className="ImageExportModal__settings__buttons__button"
-            label={t("imageExportDialog.title.exportToSvg")}
-            onClick={() =>
-              onExportImage(EXPORT_IMAGE_TYPES.svg, exportedElements, {
-                exportingFrame,
-              })
-            }
-            icon={downloadIcon}
-          >
-            {t("imageExportDialog.button.exportToSvg")}
-          </FilledButton>
-          {(probablySupportsClipboardBlob || isFirefox) && (
+        {isBundledExport ? (
+          <div className="ImageExportModal__settings__buttons">
             <FilledButton
               className="ImageExportModal__settings__buttons__button"
-              label={t("imageExportDialog.title.copyPngToClipboard")}
-              status={copyStatus}
-              onClick={async () => {
-                await onExportImage(
-                  EXPORT_IMAGE_TYPES.clipboard,
-                  exportedElements,
-                  {
-                    exportingFrame,
-                  },
-                );
-                onCopy();
-              }}
-              icon={copyIcon}
+              label={t("imageExportDialog.title.exportToZip")}
+              onClick={() => onBundledExport(elementsSnapshot, selectedFrames)}
+              icon={downloadIcon}
             >
-              {t("imageExportDialog.button.copyPngToClipboard")}
+              {t("imageExportDialog.button.exportToZip")}
             </FilledButton>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="ImageExportModal__settings__buttons">
+            <FilledButton
+              className="ImageExportModal__settings__buttons__button"
+              label={t("imageExportDialog.title.exportToPng")}
+              onClick={() =>
+                onExportImage(EXPORT_IMAGE_TYPES.png, exportedElements, {
+                  exportingFrame,
+                })
+              }
+              icon={downloadIcon}
+            >
+              {t("imageExportDialog.button.exportToPng")}
+            </FilledButton>
+            <FilledButton
+              className="ImageExportModal__settings__buttons__button"
+              label={t("imageExportDialog.title.exportToSvg")}
+              onClick={() =>
+                onExportImage(EXPORT_IMAGE_TYPES.svg, exportedElements, {
+                  exportingFrame,
+                })
+              }
+              icon={downloadIcon}
+            >
+              {t("imageExportDialog.button.exportToSvg")}
+            </FilledButton>
+            {(probablySupportsClipboardBlob || isFirefox) && (
+              <FilledButton
+                className="ImageExportModal__settings__buttons__button"
+                label={t("imageExportDialog.title.copyPngToClipboard")}
+                status={copyStatus}
+                onClick={async () => {
+                  await onExportImage(
+                    EXPORT_IMAGE_TYPES.clipboard,
+                    exportedElements,
+                    {
+                      exportingFrame,
+                    },
+                  );
+                  onCopy();
+                }}
+                icon={copyIcon}
+              >
+                {t("imageExportDialog.button.copyPngToClipboard")}
+              </FilledButton>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -390,6 +436,7 @@ export const ImageExportDialog = ({
   files,
   actionManager,
   onExportImage,
+  onBundledExport,
   onCloseRequest,
   name,
 }: {
@@ -398,6 +445,7 @@ export const ImageExportDialog = ({
   files: BinaryFiles;
   actionManager: ActionManager;
   onExportImage: AppClassProperties["onExportImage"];
+  onBundledExport: AppClassProperties["onBundledExport"];
   onCloseRequest: () => void;
   name: string;
 }) => {
@@ -418,6 +466,7 @@ export const ImageExportDialog = ({
         files={files}
         actionManager={actionManager}
         onExportImage={onExportImage}
+        onBundledExport={onBundledExport}
         name={name}
         exportWithDarkMode={appState.exportWithDarkMode}
       />

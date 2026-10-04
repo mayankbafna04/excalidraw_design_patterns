@@ -316,6 +316,8 @@ export const MIME_TYPES = {
   "excalidraw.png": "image/png",
   // binary
   binary: "application/octet-stream",
+  // archive (bundled frame export)
+  zip: "application/zip",
   // image
   ...IMAGE_MIME_TYPES,
 } as const;
@@ -331,6 +333,9 @@ export const EXPORT_IMAGE_TYPES = {
   svg: "svg",
   clipboard: "clipboard",
 } as const;
+
+/** max number of frames that can be exported in a single bundled export */
+export const BUNDLED_EXPORT_MAX_FRAMES = 10;
 
 export const EXPORT_DATA_TYPES = {
   excalidraw: "excalidraw",

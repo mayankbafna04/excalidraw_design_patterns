@@ -18,6 +18,7 @@ import { getElementsOverlappingFrame } from "@excalidraw/element";
 import type {
   ExcalidrawElement,
   ExcalidrawFrameLikeElement,
+  FileId,
   NonDeleted,
   NonDeletedExcalidrawElement,
 } from "@excalidraw/element/types";
@@ -95,6 +96,53 @@ export const prepareElementsForExport = (
   };
 };
 
+/**
+ * Renders the elements into a PNG blob. This is the "export to PNG" pipeline
+ * up to the point where the file gets saved, factored out of `exportCanvas()`
+ * so that other callers (bundled frame export) produce the very same image.
+ */
+export const exportToPngBlob = (
+  elements: ExportedElements,
+  appState: AppState,
+  files: BinaryFiles,
+  {
+    exportBackground,
+    exportPadding = DEFAULT_EXPORT_PADDING,
+    viewBackgroundColor,
+    exportingFrame = null,
+    onImageErrors,
+  }: {
+    exportBackground: boolean;
+    exportPadding?: number;
+    viewBackgroundColor: string;
+    exportingFrame?: NonDeleted<ExcalidrawFrameLikeElement> | null;
+    onImageErrors?: (fileIds: readonly FileId[]) => void;
+  },
+): Promise<Blob> => {
+  const tempCanvas = exportToCanvas(elements, appState, files, {
+    exportBackground,
+    viewBackgroundColor,
+    exportPadding,
+    exportingFrame,
+    onImageErrors,
+  });
+
+  let blob = canvasToBlob(tempCanvas);
+
+  if (appState.exportEmbedScene) {
+    blob = blob.then((blob) =>
+      import("./image").then(({ encodePngMetadata }) =>
+        encodePngMetadata({
+          blob,
+          metadata: serializeAsJSON(elements, appState, files, "local"),
+        }),
+      ),
+    );
+  }
+
+  return blob;
+};
+
 export const exportCanvas = async (
   type: Omit<ExportType, "backend">,
   elements: ExportedElements,
@@ -163,26 +211,13 @@ export const exportCanvas = async (
     }
   }
 
-  const tempCanvas = exportToCanvas(elements, appState, files, {
-    exportBackground,
-    viewBackgroundColor,
-    exportPadding,
-    exportingFrame,
-  });
-
   if (type === "png") {
-    let blob = canvasToBlob(tempCanvas);
-
-    if (appState.exportEmbedScene) {
-      blob = blob.then((blob) =>
-        import("./image").then(({ encodePngMetadata }) =>
-          encodePngMetadata({
-            blob,
-            metadata: serializeAsJSON(elements, appState, files, "local"),
-          }),
-        ),
-      );
-    }
+    const blob = exportToPngBlob(elements, appState, files, {
+      exportBackground,
+      viewBackgroundColor,
+      exportPadding,
+      exportingFrame,
+    });
 
     return fileSave(blob, {
       description: "Export to PNG",
@@ -192,6 +227,12 @@ export const exportCanvas = async (
       fileHandle,
     });
   } else if (type === "clipboard") {
+    const tempCanvas = exportToCanvas(elements, appState, files, {
+      exportBackground,
+      viewBackgroundColor,
+      exportPadding,
+      exportingFrame,
+    });
     try {
       const blob = canvasToBlob(tempCanvas);
       await copyBlobToClipboardAsPng(blob);

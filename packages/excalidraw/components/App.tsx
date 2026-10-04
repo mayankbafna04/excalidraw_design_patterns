@@ -364,6 +364,7 @@ import {
 } from "../clipboard";
 
 import { exportCanvas, loadFromBlob } from "../data";
+import { bundledExport } from "../data/bundledExport";
 import Library, { distributeLibraryItemsOnSquareGrid } from "../data/library";
 import { restoreAppState, restoreElements } from "../data/restore";
 import { getCenter, getDistance } from "../gesture";
@@ -448,6 +449,7 @@ import ConvertElementTypePopup, {
 } from "./ConvertElementTypePopup";
 
 import { activeConfirmDialogAtom } from "./ActiveConfirmDialog";
+import { bundledExportStatusAtom } from "./BundledExportStatus";
 import { AppArrowText } from "./App.arrowText";
 import { AppBucketFill } from "./App.bucketFill";
 import { AppToolDrag, TOOL_DRAG_PREVIEW_OPACITY } from "./App.toolDrag";
@@ -487,6 +489,7 @@ import type {
 
 import type { ClipboardData, PastedMixedContent } from "../clipboard";
 import type { ExportedElements } from "../data";
+import type { BundledExportStatusState } from "./BundledExportStatus";
 import type { ContextMenuItems } from "./ContextMenu";
 
 import type {
@@ -2508,6 +2511,7 @@ class App extends React.Component<AppProps, AppState> {
                             }
                             UIOptions={this.props.UIOptions}
                             onExportImage={this.onExportImage}
+                            onBundledExport={this.onBundledExport}
                             renderWelcomeScreen={
                               !this.state.isLoading &&
                               this.state.showWelcomeScreen &&
@@ -2832,6 +2836,76 @@ class App extends React.Component<AppProps, AppState> {
       isImageFileHandle(fileHandle)
     ) {
       this.setState({ fileHandle });
+    }
+  };
+
+  /**
+   * Exports each of the frames into its own image, saved together in a single
+   * ZIP archive. Progress and failed frames are reported through
+   * `bundledExportStatusAtom`.
+   */
+  public onBundledExport = async (
+    elements: readonly NonDeletedExcalidrawElement[],
+    frames: readonly NonDeleted<ExcalidrawFrameLikeElement>[],
+  ) => {
+    trackEvent("export", "zip", "ui");
+
+    const controller = new AbortController();
+
+    let status: BundledExportStatusState = {
+      phase: "running",
+      completed: 0,
+      total: frames.length,
+      failures: [],
+      onCancel: () => {
+        controller.abort();
+        // the frame being exported at the moment can't be interrupted, so
+        // let's not keep the status around until it's done
+        status.onClose();
+      },
+      onClose: () => this.updateEditorAtom(bundledExportStatusAtom, null),
+    };
+    const updateStatus = (updates: Partial<BundledExportStatusState>) => {
+      if (controller.signal.aborted) {
+        return;
+      }
+      status = { ...status, ...updates };
+      this.updateEditorAtom(bundledExportStatusAtom, status);
+    };
+
+    try {
+      updateStatus({});
+
+      await bundledExport(frames, {
+        elements,
+        appState: this.state,
+        files: this.files,
+        exportBackground: this.state.exportBackground,
+        viewBackgroundColor: this.state.viewBackgroundColor,
+        name: this.getName(),
+        ownerDocument: this.ownerDocument,
+        signal: controller.signal,
+        onProgress: (progress) => updateStatus(progress),
+        onFailure: ({ id, label, message }) =>
+          updateStatus({
+            failures: [...status.failures, { id, label, message }],
+          }),
+      });
+
+      if (status.failures.length) {
+        // keep the failures on screen until the user acknowledges them
+        updateStatus({ phase: "finished" });
+      } else {
+        status.onClose();
+      }
+    } catch (error: any) {
+      status.onClose();
+      if (error?.name === "AbortError") {
+        console.warn(error);
+        return;
+      }
+      console.error(error);
+      this.setState({ errorMessage: error.message });
     }
   };
 

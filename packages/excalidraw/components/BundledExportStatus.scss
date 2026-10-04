@@ -1,0 +1,45 @@
+.excalidraw {
+  .BundledExportStatus {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    &__progress {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background-color: var(--button-gray-2);
+      overflow: hidden;
+
+      &__fill {
+        height: 100%;
+        border-radius: inherit;
+        background-color: var(--color-primary);
+        transition: width 0.15s ease-out;
+      }
+    }
+
+    &__summary {
+      font-weight: 700;
+      color: var(--color-danger);
+    }
+
+    &__failures {
+      margin: 0;
+      padding-inline-start: 1.5rem;
+      max-height: 12rem;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+
+      li + li {
+        margin-top: 0.25rem;
+      }
+    }
+
+    &__buttons {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+}
