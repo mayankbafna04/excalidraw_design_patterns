@@ -86,63 +86,85 @@ Manual (type a gap, click the button): three rects at 100/w200, 420/w90, 560/w16
 
 ---
 
-# Qingyuan Yao
+## Mayank
 
-- Andrew ID: `@qingyuay@andrew.cmu.edu`
-- GitHub: `@JasonYao-QY`
+- **GitHub:** [@mayankbafna04](https://github.com/mayankbafna04)
 
-# Request 08 – Export several frames in one operation
+### 02. Replace repeated text safely
 
-The old export image only exports one file. We could select a single frame, and export as a single frame; we could also select multiple frames and export as a giant frame containing all of them. The new features allows us to select multiple frame, choose between exporting a giant frame or several small frames, and independently check each export as success or failure.
+Find-and-replace on top of the existing canvas search. **Replace** changes the focused match. **Replace all** changes every unlocked match and records one history entry, so one undo restores the whole batch.
 
-## The change
+The substitution itself is `replaceTextMatches` in `packages/element/src/replaceText.ts`. It only returns the next elements. The search panel collects the query, the replacement, and the click, then commits that result with `CaptureUpdateAction.IMMEDIATELY`.
 
-The export of images used to be handled by the pipeline `ImageExportDialog` → `App.onExportImage` → `exportCanvas` (in `data/index.ts`) → `exportToCanvas` (in `scene/export.ts`) → `fileSave`. The bulk of the pipeline is not changed. We refactor `ImageExportDialog` to allow calling `App.onBundledExport`, which export in bundle, and we introduce a new module `bundledExport` to manage exporting several frame in one operation.
+Locked text, text inside a locked container, and locked frame titles are skipped. Wrapped text, labels in rectangles, diamonds, ellipses, and arrows, and sticky-note labels are laid out again with the existing wrap, measure, and container helpers. The source string stays `originalText`.
 
-## BundledExport includes:
+### How to run the combined version
 
-1. `parseBundle` parses the bundle sent in by `App.onBundledExport`, and each mission calls `exportToPngBlob`.
+This branch is `mayank-replace-text`, built on the latest integrated teammate changes (gap distribution and single-frame export) plus this find-and-replace.
 
-2. `trackProgress` tracks each mission’s failure and redirects the failure back to `App`, which shows them in `BundledExportStatus` inside `LayerUI`.
+```bash
+git checkout mayank-replace-text
+yarn install
+yarn start
+```
 
-3. `exportBundle` calls `createZip` (in `data/zip.ts`) → `fileSave`.
+Open http://localhost:3000.
 
-Right now the original export operation as a giant frame also calls `exportToPngBlob` when exporting. Apart from that, every detail from the old export feature is kept.
+Find-and-replace: press Cmd+F (Ctrl+F on Windows and Linux). Type the text to find, type the replacement, then use **Replace** or **Replace all**. Enter in the replace field replaces the focused match.
 
-UI: One new toggle `exportFramesSeparately` and one new display region `BundledExportStatus`.
+### How to check it
 
-There are 59 new tests written that cover clipping, image assets, cancellation, and a render failure, as according to the request. Now, there are a total of 76 tests included, as mentioned below in section Results of the checks.
+Full suite (what was run for this submission):
 
-## Results of the checks
+```bash
+yarn test:app --watch=false
+```
 
-These are proposal 08's step checks. 43 of them are in `tests/data/bundledExport.test.ts`, 15 of them are in `tests/bundledExport.test.tsx`, and 1 of them is in `tests/scene/export.test.ts`, added alongside the 18 existing functions for old features.
+This feature only:
 
-| Checks on the proposal | Tests | Count |
-| --- | --- | --- |
-| Toggle directs the workflow | `.tsx` › "toggle between a single image and an image per 10 frame" (8); `scene/export.test.ts` › the existing "should export multiple frames when selected…" and the new "should export each of the selected frames on its own when exported as a bundle" (2) | 10 |
-| `parseBundle` parses frames into missions | `.ts` › `parseBundle` (7) | 7 |
-| `trackProgress` uses deterministic frame-id order | `.ts` › `trackProgress` › "completes the missions in the order of their ids", "doesn't reorder the supplied missions" (2) | 2 |
-| Missions launch correctly; results identical to individual export; cancellation | `.ts` › "runs one mission at a time…" (1); `.ts` › `bundledExport` › "matches exporting each frame on its own" (7); `.tsx` › "images in the archive are the same as when exporting each frame on its own" (1); cancel tests in `trackProgress` (2); `bundledExport` › "cancelling" (3); `.tsx` › "can be cancelled while exporting" (1) | 15 |
-| Every error type caught and displayed, in chronological order | `.ts` › `trackProgress` › "catches explicit and implicit failures…", "reports each failure as soon as it's detected" (2); `.ts` › `parseBundle` › "reports images that couldn't be rendered as a problem" (1); `.ts` › `bundledExport` › "failures" (4); `.tsx` › "progress and failures" (4) | 11 |
-| ZIP is packed once every result is in | `.ts` › `exportBundle` (3), `createZip` (5), `getBundleFilenames` (5), "reports that saving failed", "doesn't request a file when there's nothing to export" (2) | 15 |
-| Existing tests | `scene/export.test.ts` (18) | 18 |
+```bash
+yarn vitest run packages/element/tests/replaceText.test.ts \
+  packages/excalidraw/tests/search.test.tsx
+```
 
-Manual checks also completed where separate frame export, one giant frame export, mid-task cancellation, scaling error and rendering error are all displayed.
+Manual check on the running app:
 
-## What changed from the RFC
+1. Place several text objects that share a word. Include one locked text object and one label inside a rectangle.
+2. Press Cmd+F or Ctrl+F and type that word. The panel lists the matches and an affected-item count. The locked object is listed, and it is not in the affected count.
+3. Type a replacement. **Replace** changes only the focused match. **Replace all** changes every unlocked match, including the label inside the rectangle. The locked text stays as it was.
+4. Undo once. Every replace-all edit comes back together. Redo puts them forward again.
 
-- **Default outputs of failing frames.** The RFC’s comment is worth taking: originally the failure is designed to output as it is, but this creates an inconsistency between image-generating failures and failures without an output. Right now both failures generate a white canvas that outputs nothing, and “failure” is indicated by the filename inside the zip bundle.
+### Results of the checks
 
-- **`filesystem.ts` is not edited.** Its extension type is derived from `MIME_TYPES`, so adding zip in `constants.ts` was enough.
+All automated tests and the manual check passed.
 
-- **`LayerUI.tsx` gets a new panel instead of a changed error column.** `appState.errorMessage` and `ErrorDialog` are untouched. A new `BundledExportStatus` component, fed by a jotai atom, lists the failures; `LayerUI` only renders it.
+`yarn test:app --watch=false` (4 Oct 2026): **139** files passed, **2273** tests passed, **47** skipped, **1** todo, **0** failed. About 71 seconds. Exit code 0.
 
-- **Additional design choices that AI automatically implements without specification:** A 10-frame limit (`BUNDLED_EXPORT_MAX_FRAMES`); filename sanitising, with duplicates and case-only collisions suffixed; PNG only: the SVG and clipboard buttons are hidden while the toggle is on.
+Focused command: `replaceText.test.ts` **8/8**, `search.test.tsx` **7/7** (existing search cases plus replace-one, replace-all, and the locked skip).
 
-## What remains
+Manual, on http://localhost:3000: search for `hello` found **4** matches and reported **3 affected items**. Replace all with `hi` produced `hi world`, `say hi`, and `hi team` (the rectangle label included). `hello locked` did not change. The undo stack grew by one entry. One undo restored all four original strings, and the element count stayed the same.
 
-- **The old feature.** A frame is still able to be exported on its own, and one giant frame export still remains. The system still defaults to exporting one frame when multiple frames are selected, and only changes when the toggle is manually turned on.
+![Canvas text before replace](submission/screenshots/01-canvas-with-text.png)
 
-- **The old tests.** The 18 old tests for `export.ts` are kept, in order to track that the original features have stayed normal.
+![Search highlights and the affected-item count](submission/screenshots/02-search-matches.png)
 
-- **Old design patterns.** The pattern of parsing missions, tracking processes individually, and merging at the end proved to be effective. Moreover, it turns out that there are less refactoring needed than anticipated, so most changes are adding a framework that supports multiple processes in one operation.
+![Replace all, with the locked text left unchanged](submission/screenshots/03-after-replace-all.png)
+
+![One undo restores every string](submission/screenshots/04-after-undo.png)
+
+Checked in that pass:
+
+- Locked elements and text inside locked containers are skipped.
+- Multi-line wrapping and text bounding boxes recompute, so the layout does not drift.
+- Replace-all records a single history delta, so undo is one step.
+
+### What changed from the RFC
+
+- Batch history uses `CaptureUpdateAction` in `packages/element/src/store.ts` (`syncActionResult` with `CaptureUpdateAction.IMMEDIATELY`). No custom history wrapper. This follows the design critique.
+- Text layout and wrapping recalculation (`refreshTextDimensions`, `wrapText`, bound-text measurement, sticky-note layout) are called from the substitution function, so a longer or shorter string does not leave the old wrap in place.
+
+### What remains
+
+Nothing for this feature. Single replace, replace-all, the locked skip, layout, and one-step undo are implemented and verified.
+
+---

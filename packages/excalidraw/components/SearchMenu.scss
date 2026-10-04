@@ -8,7 +8,8 @@
     padding: 8px 0 0 0;
   }
 
-  .layer-ui__search-header {
+  .layer-ui__search-header,
+  .layer-ui__search-replace {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -29,6 +30,33 @@
       input::placeholder {
         font-size: 0.9rem;
       }
+    }
+  }
+
+  .layer-ui__search-replace {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .layer-ui__search-replace-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .search-replace-btn {
+      height: 2rem;
+      padding: 0 0.75rem;
+
+      &:disabled {
+        opacity: 0.45;
+      }
+    }
+
+    .search-replace-affected {
+      margin-left: auto;
+      font-size: 0.8em;
     }
   }
 

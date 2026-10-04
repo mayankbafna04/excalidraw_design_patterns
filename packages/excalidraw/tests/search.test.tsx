@@ -7,6 +7,8 @@ import {
   KEYS,
 } from "@excalidraw/common";
 
+import { CaptureUpdateAction, isTextElement } from "@excalidraw/element";
+
 import type {
   ExcalidrawFrameLikeElement,
   ExcalidrawTextElement,
@@ -17,7 +19,7 @@ import { Excalidraw } from "../index";
 import { API } from "./helpers/api";
 import { Keyboard } from "./helpers/ui";
 import { updateTextEditor } from "./queries/dom";
-import { act, render, waitFor } from "./test-utils";
+import { act, fireEvent, render, waitFor } from "./test-utils";
 
 const { h } = window;
 
@@ -193,5 +195,120 @@ describe("search", () => {
     await waitFor(() => {
       expect(h.app.state.searchMatches?.matches.length).toBe(3);
     });
+  });
+
+  it("replaces all matches in one undo step and skips locked text", async () => {
+    const scrollIntoViewMock = jest.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+
+    const editable = API.createElement({
+      type: "text",
+      text: "test one",
+      y: 0,
+    });
+    const second = API.createElement({
+      type: "text",
+      text: "test two",
+      y: 40,
+    });
+    const locked = API.createElement({
+      type: "text",
+      text: "test locked",
+      y: 80,
+      locked: true,
+    });
+
+    API.updateScene({
+      elements: [editable, second, locked],
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+
+    Keyboard.withModifierKeys({ ctrl: true }, () => {
+      Keyboard.keyPress(KEYS.F);
+    });
+
+    const container = h.app.excalidrawContainerValue.container!;
+    const searchInput = await querySearchInput();
+    updateTextEditor(searchInput, "test");
+
+    await waitFor(() => {
+      expect(h.app.state.searchMatches?.matches.length).toBe(3);
+      expect(
+        container.querySelector('[data-testid="search-replace-affected"]')
+          ?.textContent,
+      ).toBe("2 affected items");
+    });
+
+    const replaceInput = container.querySelector<HTMLInputElement>(
+      `.${CLASSES.SEARCH_MENU_REPLACE_INPUT_WRAPPER} input`,
+    )!;
+    updateTextEditor(replaceInput, "demo");
+    fireEvent.click(
+      container.querySelector('[data-testid="search-replace-all"]')!,
+    );
+
+    await waitFor(() => {
+      const texts = h.elements.filter(isTextElement);
+      expect(texts.map((element) => element.originalText)).toEqual([
+        "demo one",
+        "demo two",
+        "test locked",
+      ]);
+    });
+
+    expect(API.getUndoStack().length).toBe(1);
+
+    Keyboard.undo();
+
+    await waitFor(() => {
+      const texts = h.elements.filter(isTextElement);
+      expect(texts.map((element) => element.originalText)).toEqual([
+        "test one",
+        "test two",
+        "test locked",
+      ]);
+    });
+    expect(API.getUndoStack().length).toBe(0);
+  });
+
+  it("replaces only the focused match", async () => {
+    const scrollIntoViewMock = jest.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+
+    API.updateScene({
+      elements: [
+        API.createElement({ type: "text", text: "alpha", y: 0 }),
+        API.createElement({ type: "text", text: "alpha", y: 40 }),
+      ],
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+
+    Keyboard.withModifierKeys({ ctrl: true }, () => {
+      Keyboard.keyPress(KEYS.F);
+    });
+
+    const container = h.app.excalidrawContainerValue.container!;
+    const searchInput = await querySearchInput();
+    updateTextEditor(searchInput, "alpha");
+
+    await waitFor(() => {
+      expect(h.app.state.searchMatches?.matches.length).toBe(2);
+      expect(h.app.state.searchMatches?.matches[0].focus).toBe(true);
+    });
+
+    const replaceInput = container.querySelector<HTMLInputElement>(
+      `.${CLASSES.SEARCH_MENU_REPLACE_INPUT_WRAPPER} input`,
+    )!;
+    updateTextEditor(replaceInput, "beta");
+    fireEvent.click(container.querySelector('[data-testid="search-replace"]')!);
+
+    await waitFor(() => {
+      const texts = h.elements.filter(isTextElement);
+      expect(texts.map((element) => element.originalText).sort()).toEqual([
+        "alpha",
+        "beta",
+      ]);
+    });
+    expect(API.getUndoStack().length).toBe(1);
   });
 });

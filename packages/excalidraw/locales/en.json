@@ -226,6 +226,11 @@
     "singleResult": "result",
     "multipleResults": "results",
     "placeholder": "Find text on canvas...",
+    "replacePlaceholder": "Replace with...",
+    "replace": "Replace",
+    "replaceAll": "Replace all",
+    "affectedSingle": "affected item",
+    "affectedMultiple": "affected items",
     "frames": "Frames",
     "texts": "Texts"
   },

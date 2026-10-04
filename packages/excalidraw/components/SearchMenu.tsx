@@ -11,8 +11,13 @@ import {
 } from "@excalidraw/common";
 
 import {
+  CaptureUpdateAction,
+  canReplaceElementText,
   getCommonBounds,
+  isBindableElement,
   isElementCompletelyInViewport,
+  replaceTextMatches,
+  updateBoundElements,
 } from "@excalidraw/element";
 
 import { measureText } from "@excalidraw/element";
@@ -33,6 +38,8 @@ import type {
   ExcalidrawFrameLikeElement,
   ExcalidrawTextElement,
 } from "@excalidraw/element/types";
+
+import type { TextMatchLocation } from "@excalidraw/element";
 
 import { atom, useAtom } from "../editor-jotai";
 
@@ -79,14 +86,63 @@ type SearchMatches = {
 
 type SearchQuery = string & { _brand: "SearchQuery" };
 
+/**
+ * Installs a pure text-replacement result as one undoable action.
+ * `CaptureUpdateAction.IMMEDIATELY` makes the store emit a single durable
+ * delta for every element changed by this call, including replace-all.
+ * Bound arrows are updated before that commit so they share the same entry.
+ */
+const commitTextReplacement = (
+  app: AppClassProperties,
+  query: string,
+  replacement: string,
+  matches: readonly TextMatchLocation[],
+) => {
+  const result = replaceTextMatches(
+    app.scene.getElementsIncludingDeleted(),
+    query,
+    replacement,
+    matches,
+  );
+  if (result.replacedCount === 0) {
+    return;
+  }
+
+  app.syncActionResult({
+    elements: result.elements,
+    captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+  });
+
+  for (const id of result.resizedContainerIds) {
+    const container = app.scene.getNonDeletedElement(id);
+    if (container && isBindableElement(container)) {
+      updateBoundElements(container, app.scene);
+    }
+  }
+
+  for (const id of result.affectedIds) {
+    const element = app.scene.getNonDeletedElement(id);
+    if (
+      element &&
+      isTextElement(element) &&
+      !element.containerId &&
+      isBindableElement(element)
+    ) {
+      updateBoundElements(element, app.scene);
+    }
+  }
+};
+
 export const SearchMenu = () => {
   const app = useApp();
   const setAppState = useExcalidrawSetAppState();
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
 
   const [inputValue, setInputValue] = useAtom(searchQueryAtom);
   const searchQuery = inputValue.trim() as SearchQuery;
+  const [replaceValue, setReplaceValue] = useState("");
 
   const [isSearching, setIsSearching] = useState(false);
 
@@ -265,9 +321,39 @@ export const SearchMenu = () => {
     };
   }, [setAppState, setFocusIndex]);
 
+  const replaceTrackedMatches = (matches: readonly TextMatchLocation[]) => {
+    commitTextReplacement(app, searchQuery, replaceValue, matches);
+  };
+
+  const replaceFocused = () => {
+    if (!searchQuery || focusIndex === null) {
+      return;
+    }
+    const match = searchMatches.items[focusIndex];
+    if (!match || !canReplaceElementText(match.element.id, elementsMap)) {
+      return;
+    }
+    replaceTrackedMatches([
+      { elementId: match.element.id, index: match.index },
+    ]);
+  };
+
+  const replaceAllMatches = () => {
+    if (!searchQuery) {
+      return;
+    }
+    replaceTrackedMatches(
+      searchMatches.items.map((item) => ({
+        elementId: item.element.id,
+        index: item.index,
+      })),
+    );
+  };
+
   const stableState = useStable({
     goToNextItem,
     goToPreviousItem,
+    replaceFocused,
     searchMatches,
   });
 
@@ -306,6 +392,15 @@ export const SearchMenu = () => {
         }
       }
 
+      if (event.target === replaceInputRef.current) {
+        if (event.key === KEYS.ENTER) {
+          event.preventDefault();
+          event.stopPropagation();
+          stableState.replaceFocused();
+        }
+        return;
+      }
+
       if (
         target instanceof app.ownerWindow.HTMLElement &&
         target.closest(".layer-ui__search")
@@ -340,6 +435,21 @@ export const SearchMenu = () => {
       ? t("search.singleResult")
       : t("search.multipleResults")
   }`;
+
+  const affectedCount = searchQuery
+    ? searchMatches.items.reduce(
+        (count, item) =>
+          count + (canReplaceElementText(item.element.id, elementsMap) ? 1 : 0),
+        0,
+      )
+    : 0;
+  const focusedMatch =
+    focusIndex !== null ? searchMatches.items[focusIndex] : undefined;
+  const canReplaceFocused = !!(
+    searchQuery &&
+    focusedMatch &&
+    canReplaceElementText(focusedMatch.element.id, elementsMap)
+  );
 
   return (
     <div className="layer-ui__search">
@@ -380,6 +490,45 @@ export const SearchMenu = () => {
           }}
           selectOnRender
         />
+      </div>
+
+      <div className="layer-ui__search-replace">
+        <TextField
+          className={CLASSES.SEARCH_MENU_REPLACE_INPUT_WRAPPER}
+          value={replaceValue}
+          ref={replaceInputRef}
+          placeholder={t("search.replacePlaceholder")}
+          onChange={setReplaceValue}
+        />
+        <div className="layer-ui__search-replace-actions">
+          <Button
+            className="search-replace-btn"
+            data-testid="search-replace"
+            disabled={!canReplaceFocused}
+            onSelect={replaceFocused}
+          >
+            {t("search.replace")}
+          </Button>
+          <Button
+            className="search-replace-btn"
+            data-testid="search-replace-all"
+            disabled={affectedCount === 0}
+            onSelect={replaceAllMatches}
+          >
+            {t("search.replaceAll")}
+          </Button>
+          {searchQuery && (
+            <div
+              className="search-replace-affected"
+              data-testid="search-replace-affected"
+            >
+              {affectedCount}{" "}
+              {affectedCount === 1
+                ? t("search.affectedSingle")
+                : t("search.affectedMultiple")}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="layer-ui__search-count">
