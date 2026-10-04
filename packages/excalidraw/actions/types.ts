@@ -113,6 +113,8 @@ export type ActionName =
   | "alignHorizontallyCentered"
   | "distributeHorizontally"
   | "distributeVertically"
+  | "distributeHorizontallyWithGap"
+  | "distributeVerticallyWithGap"
   | "flipHorizontal"
   | "flipVertical"
   | "deselect"

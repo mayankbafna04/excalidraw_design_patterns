@@ -281,6 +281,9 @@ export const CANVAS_ONLY_ACTIONS = ["selectAll"];
 export const DEFAULT_GRID_SIZE = 20;
 export const DEFAULT_GRID_STEP = 5;
 
+/** drawing units left between objects by the distribute-with-gap commands */
+export const DEFAULT_DISTRIBUTE_GAP = 24;
+
 export const IMAGE_MIME_TYPES = {
   svg: "image/svg+xml",
   png: "image/png",

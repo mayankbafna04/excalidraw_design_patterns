@@ -65,6 +65,8 @@ export {
 export {
   distributeHorizontally,
   distributeVertically,
+  distributeHorizontallyWithGap,
+  distributeVerticallyWithGap,
 } from "./actionDistribute";
 
 export { actionFlipHorizontal, actionFlipVertical } from "./actionFlip";

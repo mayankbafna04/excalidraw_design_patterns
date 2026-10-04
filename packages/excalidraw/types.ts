@@ -448,6 +448,8 @@ export interface AppState {
   currentHoveredFontFamily: FontFamilyValues | null;
   currentItemRoundness: StrokeRoundness;
   currentItemArrowType: "sharp" | "round" | "elbow";
+  /** gap used by the distribute-with-gap commands, in drawing units */
+  currentItemDistributeGap: number;
   viewBackgroundColor: string;
   scrollX: number;
   scrollY: number;

@@ -6,6 +6,7 @@ import {
   DEFAULT_FONT_SIZE,
   DEFAULT_ELEMENT_STROKE_WIDTH_KEY,
   DEFAULT_TEXT_ALIGN,
+  DEFAULT_DISTRIBUTE_GAP,
   DEFAULT_GRID_SIZE,
   EXPORT_SCALES,
   STATS_PANELS,
@@ -43,6 +44,7 @@ export const getDefaultAppState = (): Omit<
     currentItemStickynoteBackgroundColor: DEFAULT_STICKY_NOTE_BG,
     currentItemRoundness: isTestEnv() ? "sharp" : "round",
     currentItemArrowType: ARROW_TYPE.round,
+    currentItemDistributeGap: DEFAULT_DISTRIBUTE_GAP,
     currentItemStrokeStyle: DEFAULT_ELEMENT_PROPS.strokeStyle,
     currentItemStrokeWidthKey: DEFAULT_ELEMENT_STROKE_WIDTH_KEY,
     currentItemTextAlign: DEFAULT_TEXT_ALIGN,
@@ -174,6 +176,11 @@ const APP_STATE_STORAGE_CONF = (<
     server: false,
   },
   currentItemArrowType: {
+    browser: true,
+    export: false,
+    server: false,
+  },
+  currentItemDistributeGap: {
     browser: true,
     export: false,
     server: false,

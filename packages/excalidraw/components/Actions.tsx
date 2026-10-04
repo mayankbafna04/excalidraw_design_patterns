@@ -85,11 +85,16 @@ const LayersFieldset = ({
 const AlignFieldset = ({
   renderAction,
   showDistribute,
+  appState,
+  setAppState,
 }: {
   renderAction: ActionManager["renderAction"];
   showDistribute: boolean;
+  appState: UIAppState;
+  setAppState: React.Component<any, AppState>["setState"];
 }) => {
   const isRTL = document.documentElement.getAttribute("dir") === "rtl";
+  const gap = appState.currentItemDistributeGap;
 
   return (
     <fieldset>
@@ -124,6 +129,32 @@ const AlignFieldset = ({
           {renderAction("alignBottom")}
           {showDistribute && renderAction("distributeVertically")}
         </div>
+        {showDistribute && (
+          <>
+            {/* breaks the row ˇˇ */}
+            <div style={{ flexBasis: "100%", height: 0 }} />
+            <div className="distribute-gap">
+              {/* a <label> here would pick up the button styling buttonList
+                  applies to every label it contains */}
+              <span className="distribute-gap__field">
+                <span>{t("labels.distributeGap")}</span>
+                <input
+                  type="number"
+                  min={0}
+                  aria-label={t("labels.distributeGap")}
+                  value={Number.isNaN(gap) ? "" : gap}
+                  onChange={(event) =>
+                    setAppState({
+                      currentItemDistributeGap: event.target.valueAsNumber,
+                    })
+                  }
+                />
+              </span>
+              {renderAction("distributeHorizontallyWithGap")}
+              {renderAction("distributeVerticallyWithGap")}
+            </div>
+          </>
+        )}
       </div>
     </fieldset>
   );
@@ -203,6 +234,8 @@ export const SelectedShapeActions = ({
         <AlignFieldset
           renderAction={renderAction}
           showDistribute={predicates.distribute}
+          appState={appState}
+          setAppState={app.setAppState}
         />
       )}
       {predicates.showExtraActions && (
@@ -566,6 +599,8 @@ const CombinedExtraActions = ({
                 <AlignFieldset
                   renderAction={renderAction}
                   showDistribute={predicates.distribute}
+                  appState={appState}
+                  setAppState={setAppState}
                 />
               )}
               <fieldset>

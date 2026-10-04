@@ -12,7 +12,11 @@ import { CaptureUpdateAction } from "@excalidraw/element";
 
 import { getSelectedElementsByGroup } from "@excalidraw/element";
 
-import type { ExcalidrawElement } from "@excalidraw/element/types";
+import type {
+  ElementsMap,
+  ExcalidrawElement,
+  NonDeletedExcalidrawElement,
+} from "@excalidraw/element/types";
 
 import type { Distribution } from "@excalidraw/element";
 
@@ -32,18 +36,26 @@ import { register } from "./register";
 
 import type { AppClassProperties, AppState, UIAppState } from "../types";
 
-const enableActionGroup = (appState: UIAppState, app: AppClassProperties) => {
-  const selectedElements = app.scene.getSelectedElements(appState);
-  return (
-    getSelectedElementsByGroup(
-      selectedElements,
-      app.scene.getNonDeletedElementsMap(),
-      appState,
-    ).length > 2 &&
-    // TODO enable distributing frames when implemented properly
-    !selectedElements.some((el) => isFrameLikeElement(el))
+/**
+ * Whether the selection can be distributed at all: it has to hold at least
+ * three units and no frames.
+ */
+const canDistribute = (
+  selectedElements: NonDeletedExcalidrawElement[],
+  elementsMap: ElementsMap,
+  appState: Readonly<Pick<AppState, "selectedGroupIds" | "editingGroupId">>,
+) =>
+  getSelectedElementsByGroup(selectedElements, elementsMap, appState).length >
+    2 &&
+  // TODO enable distributing frames when implemented properly
+  !selectedElements.some((el) => isFrameLikeElement(el));
+
+const enableActionGroup = (appState: UIAppState, app: AppClassProperties) =>
+  canDistribute(
+    app.scene.getSelectedElements(appState),
+    app.scene.getNonDeletedElementsMap(),
+    appState,
   );
-};
 
 const distributeSelectedElements = (
   elements: readonly ExcalidrawElement[],
@@ -68,6 +80,39 @@ const distributeSelectedElements = (
     appState,
     app,
   );
+};
+
+/**
+ * Runs a gap distribution, or gives the elements back untouched when the
+ * selection or the gap cannot be distributed. The checks live here rather than
+ * only on the button because the command palette and `executeAction` call
+ * `perform` directly.
+ */
+const distributeSelectedElementsWithGap = (
+  elements: readonly ExcalidrawElement[],
+  appState: Readonly<AppState>,
+  app: AppClassProperties,
+  axis: Distribution["axis"],
+) => {
+  const gap = appState.currentItemDistributeGap;
+
+  if (
+    !Number.isFinite(gap) ||
+    gap < 0 ||
+    !canDistribute(
+      app.scene.getSelectedElements(appState),
+      app.scene.getNonDeletedElementsMap(),
+      appState,
+    )
+  ) {
+    return elements;
+  }
+
+  return distributeSelectedElements(elements, appState, app, {
+    space: "fixedGap",
+    axis,
+    gap,
+  });
 };
 
 export const distributeHorizontally = register({
@@ -125,6 +170,54 @@ export const distributeVertically = register({
       onClick={() => updateData(null)}
       title={`${t("labels.distributeVertically")} — ${getShortcutKey("Alt+V")}`}
       aria-label={t("labels.distributeVertically")}
+      visible={isSomeElementSelected(getNonDeletedElements(elements), appState)}
+    />
+  ),
+});
+
+export const distributeHorizontallyWithGap = register({
+  name: "distributeHorizontallyWithGap",
+  label: "labels.distributeHorizontallyWithGap",
+  trackEvent: { category: "element" },
+  perform: (elements, appState, _, app) => {
+    return {
+      appState,
+      elements: distributeSelectedElementsWithGap(elements, appState, app, "x"),
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    };
+  },
+  PanelComponent: ({ elements, appState, updateData, app }) => (
+    <IconButton
+      hidden={!enableActionGroup(appState, app)}
+      type="button"
+      icon={DistributeHorizontallyIcon}
+      onClick={() => updateData(null)}
+      title={t("labels.distributeHorizontallyWithGap")}
+      aria-label={t("labels.distributeHorizontallyWithGap")}
+      visible={isSomeElementSelected(getNonDeletedElements(elements), appState)}
+    />
+  ),
+});
+
+export const distributeVerticallyWithGap = register({
+  name: "distributeVerticallyWithGap",
+  label: "labels.distributeVerticallyWithGap",
+  trackEvent: { category: "element" },
+  perform: (elements, appState, _, app) => {
+    return {
+      appState,
+      elements: distributeSelectedElementsWithGap(elements, appState, app, "y"),
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    };
+  },
+  PanelComponent: ({ elements, appState, updateData, app }) => (
+    <IconButton
+      hidden={!enableActionGroup(appState, app)}
+      type="button"
+      icon={DistributeVerticallyIcon}
+      onClick={() => updateData(null)}
+      title={t("labels.distributeVerticallyWithGap")}
+      aria-label={t("labels.distributeVerticallyWithGap")}
       visible={isSomeElementSelected(getNonDeletedElements(elements), appState)}
     />
   ),
