@@ -12,6 +12,9 @@ yarn start                 # http://localhost:3000
 yarn test:typecheck        # tsc
 yarn test:code             # eslint
 yarn test:app --watch=false
+yarn vitest run packages/element/tests/distribute.test.tsx \
+  packages/element/tests/spacing.test.ts \
+  packages/element/tests/distributeWithGap.test.tsx
 ```
 
 ---
@@ -39,18 +42,21 @@ UI: `distributeHorizontallyWithGap` / `distributeVerticallyWithGap` (no shortcut
 
 ### Results of the checks
 
-| Check | Result |
-| --- | --- |
-| `yarn test:typecheck` / `yarn test:code` | 0 errors / clean |
-| `distribute.test.tsx` (unedited) | 4/4 |
-| `spacing.test.ts` (pure) | 12/12 |
-| `distributeWithGap.test.tsx` | 20/20 |
-| `align.test.tsx` | 50/50 |
-| Snapshots | only `currentItemDistributeGap: 24` (133 lines) |
+RFC step checks (all in-repo; last command above reruns them):
 
-New tests: unequal sizes, group-as-one-unit, y-axis, gap 0, overlap, rotation, bound label, bound arrow, undo, each refusal, and the two rules side-by-side (agree only when the first object is also the leftmost). Adding a dummy `Distribution` member produced one `tsc` error, on the table.
+| RFC check | Where | Observation |
+| --- | --- | --- |
+| Characterization first: fixture + center fallback as today's oracle | `distributeWithGap` “characterization”; `spacing` `spaceBetween` | Fixture → **0 / 124 / 154 / 198**. Fallback → **0 / 100 / 100** (A,C keep the extent; B, first-by-center, moves). Unit fallback: **0 / 50 / 200** and **100 / 0 / 100**. |
+| Extract `orderSelectionUnits` / `applyTranslations`. Existing tests unedited + order on overlapping | `distribute.test.tsx` (file unedited); `shared ordering` | **4/4**. Overlap order by box centre: **B, A, C**. Group B is one unit: `[A], [B1,B2], [C]`. |
+| `spaceBetween` keeps old math | `spacing.test.ts` | **0 / 150 / 300** — same numbers the old tests assert. |
+| `fixedGap`: unequal widths, gap 0, overlapping starts, wide leftmost / first-by-center does not move | `spacing` + `the new command` | Unequal → **0 / 124 / 198**. Gap 0 → **0 / 100 / 150** (boxes touch). Overlap → first unmoved at **30**, then **140 / 350**. |
+| Actions; reject negative gap and frames **inside `perform`**. Differential test | `the two commands agree` + refusals | Both commands, gap 24, B a 2-shape group → **0 / 124 / 154 / 198**. Negative / NaN / &lt;3 units / frame → positions unchanged. |
+| Gap input + `appState` + label. Snapshot diff only the new key | snapshots | Only `currentItemDistributeGap: 24` (133 lines). |
+| Integration: rotation, bound label, group, frame | `units that are not plain rectangles` + frame refusal | Rotated box: gap 24 on rotation-aware bounds. Label moves with container. Group = one unit. Frame: no-op. |
 
-Manual, three rects at 100/w200, 420/w90, 560/w160: old button → 100 / 385 / 560 (gaps 85/85, extent kept). New button, gap 60 → 100 / 360 / 510 (first unmoved).
+Also: `yarn test:typecheck` 0 errors; `yarn test:code` clean; `align.test.tsx` 50/50; 12 + 20 new tests.
+
+Manual: three rects at 100/w200, 420/w90, 560/w160. Old button → **100 / 385 / 560** (gaps 85/85). New button, gap 60 → **100 / 360 / 510** (first unmoved).
 
 ### What changed from the RFC
 
